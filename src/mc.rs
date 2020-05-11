@@ -23,14 +23,6 @@ impl WavelengthSampler {
     }
 
     pub fn get_wavelengths(&self) -> (f32, f32) {
-        // (
-        //     sample_clamped(&self.x_pdf, 0.01),
-        //     sample_clamped(&self.y_pdf, 0.01),
-        //     sample_clamped(&self.z_pdf, 0.01)
-        //     // (get_wavelength_uniform(), 1.0),
-        //     // (get_wavelength_uniform(), 1.0),
-        //     // (get_wavelength_uniform(), 1.0),
-        // )
         sample_clamped(&self.pdf, 0.001)
     }
 }

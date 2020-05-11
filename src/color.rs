@@ -60,6 +60,22 @@ fn clamp(x: f32) -> f32 {
     else { x }
 }
 
+pub fn find_exposure(tristimulus_buffer: &Vec<Vec3>) -> f32 {
+    let n = tristimulus_buffer.len() as f32;
+
+    // Compute the average intensity.
+    // Calculations are based on the CIE Y value,
+    // which corresponds to lightness.
+    let mean = tristimulus_buffer.iter().map(|cie| cie.y).sum::<f32>() / n;
+
+    // Then compute the standard deviation.
+    let sqr_mean = tristimulus_buffer.iter().map(|cie| cie.y * cie.y).sum::<f32>() / n;
+    let variance = sqr_mean - mean * mean;
+
+    // The desired 'white' is one standard deviation above average.
+    mean + variance.sqrt()
+}
+
 
 // Data obtained from http://cvrl.ioo.ucl.ac.uk/index.htm.
 

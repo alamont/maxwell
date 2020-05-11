@@ -16,7 +16,7 @@ use crate::vector::{Vec3};
 use crate::camera::Camera;
 use crate::geometry::{Geometry, sphere::Sphere, HittableList};
 use crate::ray::Ray;
-use crate::color::{get_tristimulus, cie_to_rgb};
+use crate::color::{get_tristimulus, cie_to_rgb, find_exposure};
 use crate::material::{lambertian::Lambertian, ScatterRecord};
 use constants::{BOLTZMANNS_CONSTANT, SPEED_OF_LIGHT, PLANCKS_CONSTANT, WIENS_CONSTANT};
 
@@ -84,9 +84,14 @@ fn main() {
             })
             .collect::<Vec<Vec3>>();
 
+        let max_intensity = find_exposure(&tristimulus_buffer);
+        let ln_4 = 4.0f32.ln();
         win_buffer = tristimulus_buffer
             .iter()
-            .map(|tri| (cie_to_rgb(tri) * 255.99).map(|v| v as u8))
+            .map(|tri| {
+                let tri_scaled = tri / max_intensity + Vec3::new(1.0, 1.0, 1.0).map(|v| v.ln()) / ln_4;
+                (cie_to_rgb(&tri_scaled) * 255.99).map(|v| v as u8)
+            })
             .map(|v| ((v.x as u32) << 16) | ((v.y as u32) << 8) | v.z as u32)
             .collect();
 
@@ -146,9 +151,6 @@ fn ray_tristimulus(ray: &Ray, world: &Box<dyn Geometry>, depth: u32) -> Vec3 {
     } else {
         let temperature = 6500.0;
         get_tristimulus(ray.wavelength) * boltzmann(ray.wavelength, temperature) / boltzmann((WIENS_CONSTANT / temperature) * 1.0e9, temperature)
-        // Vec3::zeros()
-        // Vec3::new(0.8, 0.8, 0.8)
-        // get_tristimulus(ray.wavelength) * 10.0
     }
 }
 
