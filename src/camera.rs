@@ -60,7 +60,7 @@ impl Camera {
             wavelength_sampler
         }
     }
-    pub fn get_ray_tri(&self, s: f32, t: f32) -> (Ray, Ray, Ray) {
+    pub fn get_ray_tri(&self, s: f32, t: f32) -> Ray {
         use ApertureShape::*;
         let rd = match &self.aperture_shape {
             Circle => self.lens_radius * random_unit_in_disk(),
@@ -74,44 +74,19 @@ impl Camera {
             }
         };
         let offset = self.u * rd.x + self.v * rd.y;
-        // let wavelength = get_wavelength();
 
-        let (
-            (wavelength_x, pdf_x),
-            (wavelength_y, pdf_y),
-            (wavelength_z, pdf_z),
-        )
-        = self.wavelength_sampler.get_wavelengths();
+        let (wavelength, pdf) = self.wavelength_sampler.get_wavelengths();
 
-        // println!("nm: {}", wavelength);
-        
-        (
-            Ray {
-                origin: self.origin + offset,
-                direction: self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset,
-                wavelength: wavelength_x,
-                pdf: pdf_x
-            },
-            Ray {
-                origin: self.origin + offset,
-                direction: self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset,
-                wavelength: wavelength_y,
-                pdf: pdf_y
-            },
-            Ray {
-                origin: self.origin + offset,
-                direction: self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset,
-                wavelength: wavelength_z,
-                pdf: pdf_z
-            }
-        )
+        let direction = self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset;
+        let origin = self.origin + offset;
+    
+        Ray {
+            origin,
+            direction,
+            wavelength,
+            pdf
+        }            
     }
-
-    // pub fn get_ray_an(&self, s: f32, t: f32) -> Ray {
-    //     let mut ray = self.get_ray(s, t);
-    //     ray.albedo_normal_ray = true;
-    //     ray
-    // }
 }
 
 impl Default for Camera {

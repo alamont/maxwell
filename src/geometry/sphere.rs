@@ -1,13 +1,13 @@
 use crate::geometry::{Geometry, HitRecord};
-// use crate::material::Material;
+use crate::material::Material;
 use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3};
 use std::f32::consts::PI;
 
 pub struct Sphere {
     pub center: Vec3,
-    pub radius: f32
-    // pub material: &Material,
+    pub radius: f32,
+    pub material: Box<dyn Material>,
 }
 
 // impl Sphere {
@@ -39,7 +39,7 @@ impl Geometry for Sphere {
                     p,
                     normal: outward_normal,
                     // ray,
-                    // &self.material,
+                    material: self.material.box_clone(),
                     uv
                 });
             }
@@ -53,7 +53,7 @@ impl Geometry for Sphere {
                     p,
                     normal: outward_normal,
                     // ray,
-                    // &self.material,
+                    material: self.material.box_clone(),
                     uv
                 });
             }
