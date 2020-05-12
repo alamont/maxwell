@@ -14,7 +14,7 @@ use minifb::{Key, ScaleMode, Window, WindowOptions, MouseMode, MouseButton};
 
 use crate::vector::{Vec3};
 use crate::camera::Camera;
-use crate::geometry::{Geometry, sphere::Sphere, HittableList};
+use crate::geometry::{Geometry, sphere::Sphere, HittableList, bvh::BVHNode};
 use crate::ray::Ray;
 use crate::color::{get_tristimulus, cie_to_rgb, find_exposure};
 use crate::material::{lambertian::Lambertian, ScatterRecord};
@@ -54,10 +54,8 @@ fn main() {
         radius: 1000.0,
         material: Box::new(material.clone())
     };
-   
-    let world: Box<dyn Geometry> = Box::new(HittableList {
-        objects: vec![Box::new(sphere), Box::new(sphere_large)]
-    });
+    let objects: Vec<Box<dyn Geometry>> = vec![Box::new(sphere), Box::new(sphere_large)];
+    let world = BVHNode::build( objects, 0);
 
 
     for n in 0..samples {

@@ -1,19 +1,21 @@
 pub mod sphere;
+pub mod bvh;
+pub mod aabb;
 
 use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3};
 use crate::material::Material;
+use crate::geometry::aabb::{AABB, surrounding_box};
 
 pub trait Geometry: Sync + Send{
     fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord>;
+    fn aabb(&self) -> AABB;
 }
 
 pub struct HitRecord {
     pub t: f32,
     pub p: Vec3,
     pub normal: Vec3,
-    // pub front_face: bool,
-    // pub material: &'a Box<dyn Material>,
     pub material: Box<dyn Material>,
     pub uv: Vec2
 }
@@ -41,20 +43,20 @@ impl Geometry for HittableList {
         }
         return hit_closest;
     }
-    // fn bounding_box(&self) -> Option<AABB> {
-    //     if !self.objects.is_empty() {
-    //         if let Some(mut output_box) = self.objects[0].bounding_box() {
-    //             for object in &self.objects[1..] {
-    //                 if let Some(bb) = object.bounding_box() {
-    //                     output_box = surrounding_box(output_box, bb);
-    //                 }
-    //             }
-    //             Some(output_box)
-    //         } else {
-    //             None
-    //         }
-    //     } else {
-    //         None
-    //     }
-    // }
+    fn aabb(&self) -> AABB {
+        if !&self.objects.is_empty() {
+            let mut output_box = self.objects[0].aabb();
+            if self.objects.len() > 1 {
+                for object in &self.objects[1..] {
+                    let bb = object.aabb();
+                    output_box = surrounding_box(output_box, bb);                    
+                }
+                output_box
+            } else {
+                AABB::zero()
+            }
+        } else {
+            AABB::zero()
+        }
+    }
 }

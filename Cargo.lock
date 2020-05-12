@@ -7,17 +7,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d2e7343e7fc9de883d1b0341e0b13970f764c14101234857d2ddafa1cb1cac2"
 
 [[package]]
-name = "alga"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f823d037a7ec6ea2197046bafd4ae150e6bc36f9ca347404f46a46823fa84f2"
-dependencies = [
- "approx",
- "num-complex",
- "num-traits",
-]
-
-[[package]]
 name = "approx"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -43,19 +32,6 @@ name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
-
-[[package]]
-name = "bvh"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d6c2ceb5fd806c498ce1fe83ba7c0463dd4fc175a193dfafd2779c55aeb2085"
-dependencies = [
- "approx",
- "log",
- "nalgebra 0.20.0",
- "num 0.2.1",
- "rand 0.7.3",
-]
 
 [[package]]
 name = "bytemuck"
@@ -303,15 +279,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7d73b3f436185384286bd8098d17ec07c9a7d2388a6599f824d8502b529702a"
 
 [[package]]
-name = "log"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "lzw"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -330,10 +297,9 @@ dependencies = [
 name = "maxwell"
 version = "0.1.0"
 dependencies = [
- "bvh",
  "image",
  "minifb",
- "nalgebra 0.21.0",
+ "nalgebra",
  "rand 0.7.3",
  "rayon",
 ]
@@ -385,24 +351,6 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6511777ed3da44b6a11e732a66a7d6274dfbbcd68ad968e64b778dcb829d94a"
-dependencies = [
- "alga",
- "approx",
- "generic-array",
- "matrixmultiply",
- "num-complex",
- "num-rational",
- "num-traits",
- "rand 0.7.3",
- "rand_distr",
- "typenum",
-]
-
-[[package]]
-name = "nalgebra"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d630f146ae751cfb43db9e0ad6bd73819a546a38baa5d4a9de69823c389c78a1"
@@ -444,31 +392,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8536030f9fea7127f841b45bb6243b27255787fb4eb83958aa1ef9d2fdc0c36"
-dependencies = [
- "num-bigint",
- "num-complex",
- "num-integer",
- "num-iter",
- "num-rational",
- "num-traits",
-]
-
-[[package]]
-name = "num-bigint"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304"
-dependencies = [
- "autocfg 1.0.0",
- "num-integer",
- "num-traits",
-]
-
-[[package]]
 name = "num-complex"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -506,7 +429,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
 dependencies = [
  "autocfg 1.0.0",
- "num-bigint",
  "num-integer",
  "num-traits",
 ]
@@ -872,7 +794,7 @@ dependencies = [
  "bitflags",
  "lazy_static",
  "libc",
- "num 0.1.42",
+ "num",
  "rand 0.6.5",
  "sdl2-sys",
 ]

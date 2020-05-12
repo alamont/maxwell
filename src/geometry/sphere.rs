@@ -1,8 +1,9 @@
-use crate::geometry::{Geometry, HitRecord};
+use std::f32::consts::PI;
+
+use crate::geometry::{Geometry, HitRecord, aabb::{AABB}};
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3};
-use std::f32::consts::PI;
 
 pub struct Sphere {
     pub center: Vec3,
@@ -60,14 +61,15 @@ impl Geometry for Sphere {
         }
         None
     }
+
+    fn aabb(&self) -> AABB {
+        let half_size = Vec3::new(self.radius, self.radius, self.radius);
+        let min = self.center - half_size;
+        let max = self.center + half_size;
+        AABB { min, max }
+    }
 }
 
-// fn bounding_box(&self) -> Option<AABB> {
-//     Some(AABB {
-//         min: self.center - vec(self.radius, self.radius, self.radius),
-//         max: self.center + vec(self.radius, self.radius, self.radius),
-//     })
-// }
 
 fn get_sphere_uv(p: Vec3) -> Vec2 {
     let phi = p.z.atan2(p.x);
