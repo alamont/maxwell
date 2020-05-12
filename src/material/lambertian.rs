@@ -22,7 +22,7 @@ impl Material for Lambertian {
             pdf: Box::new(pdf),
         })
     }
-    fn scattering_pdf(&self, ray_scatterd: &Ray, hit: &HitRecord, ) -> f32 {
+    fn scattering_pdf(&self, ray_scatterd: &Ray, hit: &HitRecord) -> f32 {
         let cosine = hit.normal.dot(&ray_scatterd.direction.normalize());
         if cosine < 0.0 {
             0.0

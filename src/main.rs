@@ -55,37 +55,37 @@ fn main() {
         Box::new(Sphere {
             center: Vec3::new(-3.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(2000.0, 10.0))
+            material: Box::new(BlackBody::new(2000.0, 10.0, 0.5))
         }),
         Box::new(Sphere {
             center: Vec3::new(-2.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(3000.0, 10.0))
+            material: Box::new(BlackBody::new(3000.0, 10.0, 0.5))
         }),
         Box::new(Sphere {
             center: Vec3::new(-1.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(4000.0, 10.0))
+            material: Box::new(BlackBody::new(4000.0, 10.0, 0.5))
         }),
         Box::new(Sphere {
             center: Vec3::new(0.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(5000.0, 10.0))
+            material: Box::new(BlackBody::new(5000.0, 10.0, 0.5))
         }),
         Box::new(Sphere {
             center: Vec3::new(1.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(7000.0, 10.0))
+            material: Box::new(BlackBody::new(7000.0, 10.0, 0.5))
         }),
         Box::new(Sphere {
             center: Vec3::new(2.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(10000.0, 10.0))
+            material: Box::new(BlackBody::new(10000.0, 10.0, 0.5))
         }),
         Box::new(Sphere {
             center: Vec3::new(3.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(15000.0, 10.0))
+            material: Box::new(BlackBody::new(15000.0, 10.0, 0.5))
         }),
 
         Box::new(Sphere {
