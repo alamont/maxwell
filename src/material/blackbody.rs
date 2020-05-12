@@ -7,7 +7,7 @@ use crate::geometry::HitRecord;
 pub struct BlackBody {
     temperature: f32,
     normalisation_factor: f32,
-    material: Option<Box<Material>>,
+    material: Option<Box<dyn Material>>,
 }
 
 impl BlackBody {
@@ -16,6 +16,13 @@ impl BlackBody {
             temperature,
             normalisation_factor: intensity / boltzmann((WIENS_CONSTANT / temperature) * 1.0e9, temperature),
             material: Some(Box::new(Lambertian {reflectance}))
+        }
+    }
+    pub fn new_ideal(temperature: f32, intensity: f32) -> Self {
+        BlackBody {
+            temperature,
+            normalisation_factor: intensity / boltzmann((WIENS_CONSTANT / temperature) * 1.0e9, temperature),
+            material: None
         }
     }
 }

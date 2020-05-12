@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate smallvec;
+
 mod geometry;
 mod ray;
 mod vector;
@@ -8,9 +11,12 @@ mod pdf;
 mod constants;
 mod material;
 
+use std::convert::TryInto;
 use rayon::prelude::*;
 use rand::random;
 use minifb::{Key, ScaleMode, Window, WindowOptions};
+use exr::prelude::*;
+use exr::image::simple::*;
 
 use crate::vector::{Vec3};
 use crate::camera::Camera;
@@ -55,37 +61,37 @@ fn main() {
         Box::new(Sphere {
             center: Vec3::new(-3.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(2000.0, 10.0, 0.5))
+            material: Box::new(BlackBody::new_ideal(2000.0, 10.0))
         }),
         Box::new(Sphere {
             center: Vec3::new(-2.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(3000.0, 10.0, 0.5))
+            material: Box::new(BlackBody::new_ideal(3000.0, 10.0))
         }),
         Box::new(Sphere {
             center: Vec3::new(-1.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(4000.0, 10.0, 0.5))
+            material: Box::new(BlackBody::new_ideal(4000.0, 10.0))
         }),
         Box::new(Sphere {
             center: Vec3::new(0.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(5000.0, 10.0, 0.5))
+            material: Box::new(BlackBody::new_ideal(5000.0, 10.0))
         }),
         Box::new(Sphere {
             center: Vec3::new(1.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(7000.0, 10.0, 0.5))
+            material: Box::new(BlackBody::new_ideal(7000.0, 10.0))
         }),
         Box::new(Sphere {
             center: Vec3::new(2.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(10000.0, 10.0, 0.5))
+            material: Box::new(BlackBody::new_ideal(10000.0, 10.0))
         }),
         Box::new(Sphere {
             center: Vec3::new(3.0, 1.6, 0.0),
             radius: 0.50,
-            material: Box::new(BlackBody::new(15000.0, 10.0, 0.5))
+            material: Box::new(BlackBody::new_ideal(15000.0, 10.0))
         }),
 
         Box::new(Sphere {
@@ -188,6 +194,47 @@ fn main() {
             break;
         }
     }
+
+
+    // Output image
+    let x = Channel::new(
+        "R".try_into().unwrap(),
+        true,
+        Samples::F32(tristimulus_buffer.iter().map(|tri| tri.x).collect())
+    );
+
+    let y = Channel::new(
+        "G".try_into().unwrap(),
+        true,
+        Samples::F32(tristimulus_buffer.iter().map(|tri| tri.y).collect())
+    );
+
+    let z = Channel::new(
+        "B".try_into().unwrap(),
+        true,
+        Samples::F32(tristimulus_buffer.iter().map(|tri| tri.z).collect())
+    );
+
+    let layer = Layer::new(
+        "test-image".try_into().unwrap(),
+        (width, height),
+        smallvec![ x, y, z ],
+    );
+
+    let layer = layer.with_compression(Compression::RLE)
+        .with_block_format(None, attributes::LineOrder::Increasing);
+
+    let mut image = Image::new_from_single_layer(layer);
+    let chromaticities = exr::meta::attributes::Chromaticities{
+        red: exr::math::Vec2(1.0, 0.0),
+        green: exr::math::Vec2(0.0, 1.0),
+        blue: exr::math::Vec2(0.0, 0.0),
+        white: exr::math::Vec2(1.0/3.0, 1.0/3.0),
+    };
+    image.attributes.chromaticities = Some(chromaticities);
+    image.write_to_file("output/test.exr", write_options::high()).unwrap();
+
+
 }
 
 fn ray_tristimulus(ray: &Ray, world: &Box<dyn Geometry>, depth: u32) -> Vec3 {
