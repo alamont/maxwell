@@ -10,28 +10,28 @@ mod material;
 
 use rayon::prelude::*;
 use rand::random;
-use minifb::{Key, ScaleMode, Window, WindowOptions, MouseMode, MouseButton};
+use minifb::{Key, ScaleMode, Window, WindowOptions};
 
 use crate::vector::{Vec3};
 use crate::camera::Camera;
-use crate::geometry::{Geometry, sphere::Sphere, HittableList, bvh::BVHNode};
+use crate::geometry::{Geometry, sphere::Sphere, bvh::BVHNode};
 use crate::ray::Ray;
 use crate::color::{get_tristimulus, cie_to_rgb, find_exposure};
-use crate::material::{lambertian::Lambertian, ScatterRecord};
-use constants::{BOLTZMANNS_CONSTANT, SPEED_OF_LIGHT, PLANCKS_CONSTANT, WIENS_CONSTANT};
+use crate::material::{lambertian::Lambertian, ScatterRecord, blackbody::{BlackBody, boltzmann}};
+use constants::{WIENS_CONSTANT};
 
 fn main() {
 
-    let width = 500;
+    let width = 1000;
     let height = 500;
     let samples = 1000;
 
-    let lookfrom = Vec3::new(0.0, 1.0,2.0);
+    let lookfrom = Vec3::new(0.0, 1.0,10.0);
     let lookat = Vec3::new(0.0, 0.5, 0.0);
     let vup = Vec3::new(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom-lookat).magnitude();
     let aperture = 0.01;
-    let vfov = 50.0;
+    let vfov = 20.0;
     let aspect = width as f32 / height as f32;
 
     let camera = Camera::new(lookfrom, lookat, vup, vfov, aspect, aperture, dist_to_focus);
@@ -44,19 +44,88 @@ fn main() {
         reflectance: 0.5
     };
 
-    let sphere = Sphere {
-        center: Vec3::new(0.0,0.5,0.0),
-        radius: 0.50,
-        material: Box::new(material.clone())
-    };
-    let sphere_large = Sphere {
-        center: Vec3::new(0.0,-1000.0,0.0),
-        radius: 1000.0,
-        material: Box::new(material.clone())
-    };
-    let objects: Vec<Box<dyn Geometry>> = vec![Box::new(sphere), Box::new(sphere_large)];
-    let world = BVHNode::build( objects, 0);
+    
+    let objects: Vec<Box<dyn Geometry>> = vec![
+        Box::new(Sphere {
+            center: Vec3::new(0.0,-1000.0,0.0),
+            radius: 1000.0,
+            material: Box::new(material.clone())
+        }),
 
+        Box::new(Sphere {
+            center: Vec3::new(-3.0, 1.6, 0.0),
+            radius: 0.50,
+            material: Box::new(BlackBody::new(2000.0, 10.0))
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(-2.0, 1.6, 0.0),
+            radius: 0.50,
+            material: Box::new(BlackBody::new(3000.0, 10.0))
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(-1.0, 1.6, 0.0),
+            radius: 0.50,
+            material: Box::new(BlackBody::new(4000.0, 10.0))
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(0.0, 1.6, 0.0),
+            radius: 0.50,
+            material: Box::new(BlackBody::new(5000.0, 10.0))
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(1.0, 1.6, 0.0),
+            radius: 0.50,
+            material: Box::new(BlackBody::new(7000.0, 10.0))
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(2.0, 1.6, 0.0),
+            radius: 0.50,
+            material: Box::new(BlackBody::new(10000.0, 10.0))
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(3.0, 1.6, 0.0),
+            radius: 0.50,
+            material: Box::new(BlackBody::new(15000.0, 10.0))
+        }),
+
+        Box::new(Sphere {
+            center: Vec3::new(-3.0,0.5,0.0),
+            radius: 0.50,
+            material: Box::new(material.clone())
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(-2.0,0.5,0.0),
+            radius: 0.50,
+            material: Box::new(material.clone())
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(-1.0,0.5,0.0),
+            radius: 0.50,
+            material: Box::new(material.clone())
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(0.0,0.5,0.0),
+            radius: 0.50,
+            material: Box::new(material.clone())
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(1.0,0.5,0.0),
+            radius: 0.50,
+            material: Box::new(material.clone())
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(2.0,0.5,0.0),
+            radius: 0.50,
+            material: Box::new(material.clone())
+        }),
+        Box::new(Sphere {
+            center: Vec3::new(3.0,0.5,0.0),
+            radius: 0.50,
+            material: Box::new(material.clone())
+        }),
+    ];
+    let world = BVHNode::build( objects, 0);
+    let exposure_correction = 5.0;
 
     for n in 0..samples {
         tristimulus_buffer = (0..height)
@@ -82,7 +151,7 @@ fn main() {
             })
             .collect::<Vec<Vec3>>();
 
-        let max_intensity = find_exposure(&tristimulus_buffer);
+        let max_intensity = find_exposure(&tristimulus_buffer) / exposure_correction;
         let ln_4 = 4.0f32.ln();
         win_buffer = tristimulus_buffer
             .iter()
@@ -129,6 +198,9 @@ fn ray_tristimulus(ray: &Ray, world: &Box<dyn Geometry>, depth: u32) -> Vec3 {
 
     if let Some(hit_rec) = world.hit(&ray, 0.001, f32::MAX) {
 
+        let emitted_intensity = hit_rec.material.emitted(&ray, &hit_rec);
+        let emitted = emitted_intensity * get_tristimulus(ray.wavelength);    
+
         if let Some(scatter_record) = hit_rec.material.scatter(&ray, &hit_rec) {
             match scatter_record {
                 ScatterRecord::Diffuse {attenuation, pdf} => {
@@ -138,13 +210,13 @@ fn ray_tristimulus(ray: &Ray, world: &Box<dyn Geometry>, depth: u32) -> Vec3 {
                         wavelength: ray.wavelength,
                         pdf: ray.pdf
                     };
-                    let pdf_val = pdf.value(scattered_ray.direction);                
-                    attenuation * hit_rec.material.scattering_pdf(&scattered_ray, &hit_rec) * &ray_tristimulus(&scattered_ray, world, depth - 1) / pdf_val
+                    let pdf_val = pdf.value(scattered_ray.direction);                     
+                    emitted + attenuation * hit_rec.material.scattering_pdf(&scattered_ray, &hit_rec) * &ray_tristimulus(&scattered_ray, world, depth - 1) / pdf_val
                 },
                 _ => Vec3::zeros()
             }
         } else {
-            Vec3::zeros()               
+            emitted
         }
     } else {
         let temperature = 6500.0;
@@ -173,19 +245,4 @@ fn window(width: usize, height:usize) -> Window {
 
 fn running_mean(last_mean: &Vec3, new_value: &Vec3, n: u32) -> Vec3 {
     last_mean + (new_value - last_mean) / (n + 1) as f32
-}
-
-fn boltzmann(wavelength: f32, temperature: f32) -> f32 {
-    // Use double precision here, the numbers are quite large/small,
-    // which might cause precision loss.
-    let h = PLANCKS_CONSTANT;
-    let k = BOLTZMANNS_CONSTANT;
-    let c = SPEED_OF_LIGHT;
-
-    // Multiply by 1e-9 (nano), because the wavelength is specified in nm,
-    // while m is the standard unit.
-    let f = c / (wavelength * 1.0e-9);
-
-    // Then evaluate the Boltzmann distribution.
-    (2.0 * h * f * f * f) / (c * c * ((h * f / (k * temperature)).exp() - 1.0)) 
 }

@@ -1,4 +1,5 @@
 pub mod lambertian;
+pub mod blackbody;
 
 use crate::geometry::HitRecord;
 use crate::vector::Vec3;
@@ -24,8 +25,8 @@ pub trait Material: Sync + Send {
     fn scattering_pdf(&self, _ray_scatterd: &Ray, _hit: &HitRecord) -> f32 {
         0.0
     }
-    fn emitted(&self, _ray_in: &Ray, _hit: &HitRecord) ->Vec3 {
-        Vec3::new(0.0, 0.0, 0.0)
+    fn emitted(&self, _ray: &Ray, _hit: &HitRecord) -> f32 {
+        0.0
     }
     fn box_clone(&self) -> Box<dyn Material>;
 }
