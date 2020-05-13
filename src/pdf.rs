@@ -2,7 +2,8 @@ use std::ops::Range;
 use rand::{Rng, thread_rng, random};
 use std::f32::consts::PI;
 
-use crate::vector::Vec3;
+use crate::vector::{Vec3, onb_local};
+use crate::geometry::Geometry;
 pub trait Pdf<T>: Sync + Send {
     fn value(&self, x: T) -> f32 {
         0.0
@@ -11,19 +12,21 @@ pub trait Pdf<T>: Sync + Send {
 }
 
 pub struct Pdf1D {
-    pub x: Range<f32>,
+    pub range: Range<f32>,
     pub pdf: Vec<f32>,
     pub cum_pdf: Vec<f32>,
     
 }
 
 impl Pdf1D {
-    pub fn new(pdf: Vec<f32>) -> Self {
-        let x = 380.0..780.0;
-        // let w = x.end - x.start;
+    pub fn new(pdf: Vec<f32>, range: Range<f32>) -> Self {
+        // let x = 380.0..780.0;
+        let w = range.end - range.start;
+        let n = pdf.len() as f32;
         let pdf_sum: f32 = pdf.iter().sum();
+        let pdf_area: f32 = pdf_sum * (w / n);
         let pdf_normalized = pdf.iter().map(|v| {
-            v / pdf_sum * pdf.len() as f32
+            v / pdf_area
         }).collect();
         let cum_pdf = pdf.iter().fold(vec![], |mut acc, v| {
             if acc.len() > 0 {
@@ -33,7 +36,7 @@ impl Pdf1D {
             }
             acc
         });
-        Self { x, pdf: pdf_normalized, cum_pdf }
+        Self { range, pdf: pdf_normalized, cum_pdf }
     }
 }
 
@@ -116,35 +119,66 @@ pub fn random_cosine_direction() -> Vec3 {
     Vec3::new(x, y, z)
 }
 
-pub fn onb_local(w: &Vec3, direction: &Vec3) -> Vec3 {
-    let a = if w.x.abs() > 0.9 {
-        Vec3::new(0.0, 1.0, 0.0)
-    } else {
-        Vec3::new(1.0, 0.0, 0.0)
-    };
-    let v = w.cross(&a).normalize();
-    let u = w.cross(&v);
-    direction.x * u + direction.y * v + direction.z * w
+pub struct GeometryPdf<'a> {
+    pub origin: Vec3,
+    pub geometry: &'a Box<dyn Geometry + 'a>,
 }
 
-pub struct MixturePdf<T> {
-    pub pdfs: Vec<Box<dyn Pdf<T>>>
+impl<'a> Pdf<Vec3> for GeometryPdf<'a> {
+    fn value(&self, direction: Vec3) -> f32 {
+        self.geometry.pdf(&self.origin, &direction)
+    }
+    fn sample(&self) -> Vec3 {
+        self.geometry.sample_direction(&self.origin)
+    }
 }
 
-impl<T> MixturePdf<T> {
-    pub fn new_uniform(pdfs: Vec<Box<dyn Pdf<T>>>) -> Self {
+pub enum MixtureHeuristic {
+    Uniform,
+    Power(f32),
+}
+pub struct MixturePdf<'a, T> {
+    pub pdfs: Vec<Box<dyn Pdf<T> + 'a>>,
+    pub heuristic: MixtureHeuristic
+}
+
+impl<'a, T> MixturePdf<'a, T> {
+    pub fn new_uniform(pdfs: Vec<Box<dyn Pdf<T> + 'a>>) -> Self {
         Self {
-            pdfs
+            pdfs,
+            heuristic: MixtureHeuristic::Uniform
+        }
+    }
+    pub fn new_power(pdfs: Vec<Box<dyn Pdf<T> + 'a>>, beta: f32) -> Self {
+        Self {
+            pdfs,
+            heuristic: MixtureHeuristic::Power(beta)
         }
     }
 }
 
-impl Pdf<Vec3> for MixturePdf<Vec3> {
+impl<'a> Pdf<Vec3> for MixturePdf<'a, Vec3> {
     fn value(&self, direction: Vec3) -> f32 {
-        let weight = 1.0 / self.pdfs.len() as f32;
-        self.pdfs.iter().fold(0.0, |acc, p| {
-            acc + p.value(direction) * weight
-        })
+        match self.heuristic {
+            MixtureHeuristic::Uniform => {
+                let weight = 1.0 / self.pdfs.len() as f32;
+                self.pdfs.iter().fold(0.0, |acc, p| {
+                    acc + p.value(direction) * weight
+                })
+            },
+            MixtureHeuristic::Power(beta) => {
+                let mut weight_sum = 0.0;
+                let denominator = self.pdfs.iter().fold(0.0, |acc, pk| {
+                    acc + pk.value(direction).powf(beta)
+                });
+                let p = self.pdfs.iter().fold(0.0, |acc, pi| {
+                    let weight = pi.value(direction).powf(beta) / denominator;
+                    weight_sum += weight;
+                    acc + pi.value(direction) * weight
+                });
+                p
+            }
+        }
     }
     fn sample(&self) -> Vec3 {
         let mut rng = thread_rng();
@@ -154,7 +188,7 @@ impl Pdf<Vec3> for MixturePdf<Vec3> {
     }
 }
 
-impl Pdf<f32> for MixturePdf<f32> {
+impl<'a> Pdf<f32> for MixturePdf<'a, f32> {
     fn value(&self, x: f32) -> f32 {
         let weight = 1.0 / self.pdfs.len() as f32;
         self.pdfs.iter().fold(0.0, |acc, p| {

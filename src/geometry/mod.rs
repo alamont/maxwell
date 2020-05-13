@@ -10,6 +10,12 @@ use crate::geometry::aabb::{AABB, surrounding_box};
 pub trait Geometry: Sync + Send{
     fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord>;
     fn aabb(&self) -> AABB;
+    fn pdf(&self, _origin: &Vec3, _direction: &Vec3) -> f32 {
+        0.0
+    }
+    fn sample_direction(&self, _origin: &Vec3) -> Vec3 {
+        Vec3::new(1.0, 0.0, 0.0)
+    }
 }
 
 pub struct HitRecord {

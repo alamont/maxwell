@@ -3,23 +3,13 @@ use std::f32::consts::PI;
 use crate::geometry::{Geometry, HitRecord, aabb::{AABB}};
 use crate::material::Material;
 use crate::ray::Ray;
-use crate::vector::{Vec2, Vec3};
+use crate::vector::{Vec2, Vec3, onb_local, random_to_sphere, clamp};
 
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
     pub material: Box<dyn Material>,
 }
-
-// impl Sphere {
-//     pub fn new(center: Vec3, radius:Vec2al: Box<dyn Material>) -> Self {
-//         Sphere {
-//             center,
-//             radius,
-//             material,
-//         }
-//     }
-// }
 
 impl Geometry for Sphere {
     fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord> {
@@ -68,8 +58,28 @@ impl Geometry for Sphere {
         let max = self.center + half_size;
         AABB { min, max }
     }
+
+    fn pdf(&self, origin: &Vec3, direction: &Vec3) -> f32 {
+        let ray = Ray::new(*origin, *direction, 0.0, 0.0);
+        if let Some(hit) = &self.hit(&ray, 0.001, f32::MAX) {
+            let cos_theta_max = (1.0 - self.radius * self.radius / (self.center - origin).magnitude_squared()).sqrt();
+            // println!("cos_theta_max: {}", cos_theta_max);
+            let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+            1.0 / solid_angle
+        } else { 0.0 }
+    }
+    fn sample_direction(&self, origin: &Vec3) -> Vec3 {        
+        let direction = self.center - origin;
+        let distance_squared = direction.magnitude_squared();
+        onb_local(&direction.normalize(), &random_to_sphere(self.radius, distance_squared))
+    }    
 }
 
+impl Sphere {
+    pub fn is_inside(&self, point: Vec3) -> bool {
+        (self.center - point).magnitude() < (self.radius - 0.001)
+    }
+}
 
 fn get_sphere_uv(p: Vec3) -> Vec2 {
     let phi = p.z.atan2(p.x);

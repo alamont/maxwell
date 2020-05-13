@@ -13,9 +13,9 @@ pub struct WavelengthSampler {
 impl WavelengthSampler {
     pub fn new() -> Self {
         let pdf = MixturePdf::new_uniform(vec![
-            Box::new(Pdf1D::new(X.to_vec())),
-            Box::new(Pdf1D::new(Y.to_vec())),
-            Box::new(Pdf1D::new(Z.to_vec())),
+            Box::new(Pdf1D::new(Y.to_vec(), 380.0..780.0;)),
+            Box::new(Pdf1D::new(Z.to_vec(), 380.0..780.0;)),
+            Box::new(Pdf1D::new(X.to_vec(), 380.0..780.0;)),
         ]);
         Self {
             pdf: Box::new(pdf)
