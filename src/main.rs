@@ -166,6 +166,7 @@ fn ray_tristimulus<'a>(
         } else {
             emitted
         }
+        
     } else {
         // let temperature = 6500.0;
         // get_tristimulus(ray.wavelength) * boltzmann(ray.wavelength, temperature) / boltzmann((WIENS_CONSTANT / temperature) * 1.0e9, temperature)

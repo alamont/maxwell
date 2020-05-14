@@ -1,6 +1,8 @@
 pub mod sphere;
 pub mod bvh;
 pub mod aabb;
+pub mod aarect;
+pub mod aabox;
 
 use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3};
@@ -17,7 +19,9 @@ pub trait Geometry: Sync + Send{
     fn sample_direction(&self, _origin: &Vec3) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }
-    fn is_inside(&self, point: Vec3) -> bool;
+    fn is_inside(&self, point: Vec3) -> bool {
+        false
+    }
 }
 
 pub struct HitRecord {
@@ -47,11 +51,11 @@ impl HittableList {
 }
 
 impl Geometry for HittableList {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord> {
         let mut hit_closest: Option<HitRecord> = None;
-        let mut closest_so_far = t_max;
+        let mut closest_so_far = tmax;
         for hittable_obj in self.objects.iter() {
-            if let Some(hit) = hittable_obj.hit(ray, t_min, closest_so_far) {
+            if let Some(hit) = hittable_obj.hit(ray, tmin, closest_so_far) {
                 closest_so_far = hit.t;
                 hit_closest = Some(hit);
             }
@@ -76,5 +80,34 @@ impl Geometry for HittableList {
     }
     fn is_inside(&self, point: Vec3) -> bool {
         self.aabb().is_inside(point)
+    }
+}
+
+pub struct FlipNormals {
+    pub object: Box<dyn Geometry>
+}
+
+impl FlipNormals {
+    pub fn new(object: Box<dyn Geometry>) -> Self {
+        Self {
+            object
+        }
+    }
+    pub fn boxed(self) -> Box<Self> {
+        Box::from(self)
+    }
+}
+
+impl Geometry for FlipNormals {
+    fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord> {
+        if let Some(mut hit_rec) = self.object.hit(ray, tmin, tmax) {
+            hit_rec.normal = -hit_rec.normal;
+            Some(hit_rec)
+        } else {
+            None
+        }
+    }
+    fn aabb(&self) -> AABB {
+        self.object.aabb()
     }
 }
