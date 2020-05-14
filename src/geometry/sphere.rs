@@ -29,7 +29,6 @@ impl Geometry for Sphere {
                     t,
                     p,
                     normal: outward_normal,
-                    // ray,
                     material: self.material.box_clone(),
                     uv
                 });
@@ -43,7 +42,6 @@ impl Geometry for Sphere {
                     t,
                     p,
                     normal: outward_normal,
-                    // ray,
                     material: self.material.box_clone(),
                     uv
                 });
@@ -72,13 +70,10 @@ impl Geometry for Sphere {
         let direction = self.center - origin;
         let distance_squared = direction.magnitude_squared();
         onb_local(&direction.normalize(), &random_to_sphere(self.radius, distance_squared))
-    }    
-}
-
-impl Sphere {
-    pub fn is_inside(&self, point: Vec3) -> bool {
-        (self.center - point).magnitude() < (self.radius - 0.001)
     }
+    fn is_inside(&self, point: Vec3) -> bool {
+        (self.center - point).magnitude() < (self.radius - 0.001)
+    } 
 }
 
 fn get_sphere_uv(p: Vec3) -> Vec2 {

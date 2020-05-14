@@ -6,6 +6,7 @@ use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3};
 use crate::material::Material;
 use crate::geometry::aabb::{AABB, surrounding_box};
+use crate::pdf::{Pdf, MixturePdf, GeometryPdf};
 
 pub trait Geometry: Sync + Send{
     fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord>;
@@ -16,6 +17,7 @@ pub trait Geometry: Sync + Send{
     fn sample_direction(&self, _origin: &Vec3) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }
+    fn is_inside(&self, point: Vec3) -> bool;
 }
 
 pub struct HitRecord {
@@ -34,6 +36,13 @@ pub struct HittableList {
 impl HittableList {
     pub fn push(&mut self, geom: Box<dyn Geometry>) {
         self.objects.push(geom);
+    }
+    pub fn generate_mixture_pdf(&self, hit_position: Vec3) -> MixturePdf<Vec3> {
+        let pdfs = self.objects.iter().map(|object| {
+            let geom_pdf: Box<dyn Pdf<Vec3>> = Box::new(GeometryPdf { origin: hit_position, geometry: object });
+            geom_pdf
+        }).collect::<Vec<Box<dyn Pdf<Vec3>>>>();
+        MixturePdf::new_uniform(pdfs)
     }
 }
 
@@ -64,5 +73,8 @@ impl Geometry for HittableList {
         } else {
             AABB::zero()
         }
+    }
+    fn is_inside(&self, point: Vec3) -> bool {
+        self.aabb().is_inside(point)
     }
 }

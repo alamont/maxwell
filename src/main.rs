@@ -1,44 +1,42 @@
 #[macro_use]
 extern crate smallvec;
 
-mod geometry;
-mod ray;
-mod vector;
-mod mc;
-mod color;
 mod camera;
-mod pdf;
+mod color;
 mod constants;
+mod geometry;
 mod material;
+mod mc;
 mod output;
+mod pdf;
+mod ray;
 mod scenes;
+mod vector;
 
-use rayon::prelude::*;
-use rand::random;
 use minifb::{Key, ScaleMode, Window, WindowOptions};
+use rand::random;
+use rayon::prelude::*;
 
-use crate::vector::{Vec3};
-use crate::camera::Camera;
-use crate::geometry::{Geometry, sphere::Sphere, bvh::BVHNode};
+use crate::color::{cie_to_rgb, find_exposure, get_tristimulus};
+use crate::geometry::{bvh::BVHNode, sphere::Sphere, Geometry, HittableList};
+use crate::material::{
+    blackbody::BlackBody, dielectric::Sf10Glass, ggx::GGX, lambertian::Lambertian, ScatterRecord,
+};
+use crate::output::{get_next_output_image_name, write_exr_xyz, write_png};
+use crate::pdf::{GeometryPdf, MixturePdf, Pdf};
 use crate::ray::Ray;
-use crate::color::{get_tristimulus, cie_to_rgb, find_exposure};
-use crate::material::{lambertian::Lambertian, ScatterRecord, blackbody::{BlackBody}, ggx::GGX, dielectric::Sf10Glass};
-use crate::output::{write_exr_xyz, write_png, get_next_output_image_name};
-use crate::pdf::{Pdf, GeometryPdf, MixturePdf};
-use crate::scenes::{spheres_7::sphere_7_scene};
+use crate::vector::Vec3;
 
 fn main() {
-
     let width = 1000;
     let height = 500;
-    let samples = 2000;    
+    let samples = 2000;
 
-    let mut win = window(width, height);  
+    let mut win = window(width, height);
     let mut win_buffer: Vec<u32>;
     let mut tristimulus_buffer: Vec<Vec3> = vec![Vec3::zeros(); (width * height) as usize];
 
-    
-    let (world, lights, camera) = sphere_7_scene(width, height);
+    let (world, attractors, camera) = scenes::spheres_7::scene(width, height);
 
     for n in 0..samples {
         tristimulus_buffer = (0..height)
@@ -48,17 +46,18 @@ fn main() {
                     .map(|x| {
                         let u = (x as f32 + random::<f32>()) / width as f32;
                         let v = (height as f32 - (y as f32 + random::<f32>())) / height as f32;
-                        
-                        let ray = camera.get_ray_tri(u, v);                                                
-                        let tristimulus_value = ray_tristimulus(&ray, &world, &lights, 50) / ray.pdf;
-                        
-                        let offset = ((y * width + x)) as usize;
+
+                        let ray = camera.get_ray_tri(u, v);
+                        let tristimulus_value =
+                            ray_tristimulus(&ray, &world, &attractors, 50) / ray.pdf;
+
+                        let offset = (y * width + x) as usize;
 
                         if n > 0 {
                             running_mean(&tristimulus_buffer[offset], &tristimulus_value, n)
                         } else {
                             tristimulus_value
-                        }                        
+                        }
                     })
                     .collect::<Vec<Vec3>>()
             })
@@ -71,19 +70,18 @@ fn main() {
         win_buffer = tristimulus_buffer
             .iter()
             .map(|tri| {
-                let tri_scaled = tri / max_intensity + Vec3::new(1.0, 1.0, 1.0).map(|v| v.ln()) / ln_4;
+                let tri_scaled =
+                    tri / max_intensity + Vec3::new(1.0, 1.0, 1.0).map(|v| v.ln()) / ln_4;
                 (cie_to_rgb(&tri_scaled) * 255.99).map(|v| v as u8)
             })
             .map(|v| ((v.x as u32) << 16) | ((v.y as u32) << 8) | v.z as u32)
             .collect();
 
-            let mut paused = false;
-            let mut exit = false;
+        let mut paused = false;
+        let mut exit = false;
 
         loop {
-            win
-                .update_with_buffer(&win_buffer, width, height)
-                .unwrap();        
+            win.update_with_buffer(&win_buffer, width, height).unwrap();
 
             if !win.is_open() || win.is_key_down(Key::Escape) || win.is_key_released(Key::Escape) {
                 exit = true;
@@ -105,50 +103,65 @@ fn main() {
     }
 
     let image_name_base = &*get_next_output_image_name("output/png/").unwrap();
-    write_exr_xyz(&tristimulus_buffer, width, height, format!("output/exr/{}.exr", image_name_base));
-    write_png(&tristimulus_buffer, width, height, format!("output/png/{}.png", image_name_base));
-    
+    write_exr_xyz(
+        &tristimulus_buffer,
+        width,
+        height,
+        format!("output/exr/{}.exr", image_name_base),
+    );
+    write_png(
+        &tristimulus_buffer,
+        width,
+        height,
+        format!("output/png/{}.png", image_name_base),
+    );
 }
 
-fn ray_tristimulus<'a>(ray: &Ray, world: &Box<dyn Geometry>, lights: &'a Vec<Box<dyn Geometry>>, depth: u32) -> Vec3 {
-    
+fn ray_tristimulus<'a>(
+    ray: &Ray,
+    world: &Box<dyn Geometry>,
+    attractors: &'a HittableList,
+    depth: u32,
+) -> Vec3 {
     if depth <= 0 {
         return Vec3::zeros();
     }
 
     if let Some(hit_rec) = world.hit(&ray, 0.001, f32::MAX) {
-
         let emitted_intensity = hit_rec.material.emitted(&ray, &hit_rec);
-        let emitted = emitted_intensity * get_tristimulus(ray.wavelength);  
+        let emitted = emitted_intensity * get_tristimulus(ray.wavelength);
 
         if let Some(scatter_record) = hit_rec.material.scatter(&ray, &hit_rec) {
             match scatter_record {
-                ScatterRecord::Diffuse {attenuation, pdf} => {
-                    let mut pdfs: Vec<Box<dyn Pdf<Vec3>>> = Vec::new();
-                    if lights.len() > 0 {                
-                        for light in lights.iter() {
-                            let geom_pdf: Box<dyn Pdf<Vec3>> = Box::new(GeometryPdf { origin: hit_rec.p, geometry: light });
-                            pdfs.push(geom_pdf);
-                        }
-                    }
-                    let lights_mixture_pdfs = Box::new(MixturePdf::new_uniform(pdfs));
-                    let mixture_pdf = MixturePdf::new_power(vec![lights_mixture_pdfs, pdf], 2.0);
+                ScatterRecord::Diffuse { attenuation, pdf } => {
+                    let attractors_pdf: Box<dyn Pdf<Vec3>> =
+                        Box::new(attractors.generate_mixture_pdf(hit_rec.p));
+                    let mixture_pdf = MixturePdf::new_power(vec![attractors_pdf, pdf], 2.0);
                     let scattered_ray = Ray {
-                        origin: hit_rec.p, 
+                        origin: hit_rec.p,
                         direction: mixture_pdf.sample(),
                         wavelength: ray.wavelength,
-                        pdf: ray.pdf
+                        pdf: ray.pdf,
                     };
                     let pdf_val = mixture_pdf.value(scattered_ray.direction);
                     if pdf_val == 0.0 {
                         return Vec3::zeros();
                     }
-                    let tri = emitted + attenuation * hit_rec.material.scattering_pdf(&scattered_ray, &hit_rec) * &ray_tristimulus(&scattered_ray, world, lights, depth - 1) / pdf_val;
-                    if tri.x.is_nan() { Vec3::zeros() } else { tri }
-                },
-                ScatterRecord::Specular {attenuation, ray: specular_ray} => {
-                    attenuation * &ray_tristimulus(&specular_ray, world, lights, depth - 1)
+                    let tri = emitted
+                        + attenuation
+                            * hit_rec.material.scattering_pdf(&scattered_ray, &hit_rec)
+                            * &ray_tristimulus(&scattered_ray, world, attractors, depth - 1)
+                            / pdf_val;
+                    if tri.x.is_nan() {
+                        Vec3::zeros()
+                    } else {
+                        tri
+                    }
                 }
+                ScatterRecord::Specular {
+                    attenuation,
+                    ray: specular_ray,
+                } => attenuation * &ray_tristimulus(&specular_ray, world, attractors, depth - 1),
             }
         } else {
             emitted
@@ -160,8 +173,7 @@ fn ray_tristimulus<'a>(ray: &Ray, world: &Box<dyn Geometry>, lights: &'a Vec<Box
     }
 }
 
-
-fn window(width: usize, height:usize) -> Window {
+fn window(width: usize, height: usize) -> Window {
     let mut window = Window::new(
         "Maxwell",
         width,

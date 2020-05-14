@@ -1,4 +1,4 @@
-
+use std::f32;
 use crate::ray::Ray;
 use crate::vector::Vec3;
 
@@ -24,6 +24,15 @@ impl AABB {
         AABB {
             min: Vec3::zeros(),
             max: Vec3::zeros(),
+        }
+    }
+    pub fn is_inside(&self, point: Vec3) -> bool {
+        point.zip_fold(&self.min, true, |acc, a, b| acc & (a >= b)) & point.zip_fold(&self.min, true, |acc, a, b| acc & (a <= b))
+    }
+    pub fn max() -> Self {
+        AABB {
+            min: Vec3::new(f32::MIN, f32::MIN, f32::MIN),
+            max: Vec3::new(f32::MAX, f32::MAX, f32::MAX),
         }
     }
 }

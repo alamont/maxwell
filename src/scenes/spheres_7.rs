@@ -1,9 +1,9 @@
 use crate::vector::{Vec3};
 use crate::camera::Camera;
-use crate::geometry::{Geometry, sphere::Sphere, bvh::BVHNode};
+use crate::geometry::{Geometry, sphere::Sphere, bvh::BVHNode, HittableList};
 use crate::material::{lambertian::Lambertian, blackbody::{BlackBody}, ggx::GGX, dielectric::Sf10Glass};
 
-pub fn sphere_7_scene(width: usize, height: usize) -> (Box<dyn Geometry>, Vec<Box<dyn Geometry>>, Camera) {
+pub fn scene(width: usize, height: usize) -> (Box<dyn Geometry>, Box<HittableList>, Camera) {
     let lookfrom = Vec3::new(0.0, 5.0,10.0);
     let lookat = Vec3::new(0.0, 0.5, 0.0);
     let vup = Vec3::new(0.0, 1.0, 0.0);
@@ -45,7 +45,7 @@ pub fn sphere_7_scene(width: usize, height: usize) -> (Box<dyn Geometry>, Vec<Bo
 
     let glass = Sf10Glass {};
 
-    let lights: Vec<Box<dyn Geometry>> = vec![
+    let lights_vec: Vec<Box<dyn Geometry>> = vec![
         Box::new(Sphere {
             center: Vec3::new(-3.0, 1.6, -1.0),
             radius: 0.25,
@@ -87,6 +87,7 @@ pub fn sphere_7_scene(width: usize, height: usize) -> (Box<dyn Geometry>, Vec<Bo
             material: Box::new(glass.clone())
         }),
     ];
+    let lights = Box::new(HittableList {objects: lights_vec });
 
     let objects: Vec<Box<dyn Geometry>> = vec![
         Box::new(Sphere {

@@ -78,7 +78,6 @@ pub fn get_next_output_image_name(path: &str) -> Option<String> {
     }).collect::<Vec<String>>();
 
     names.sort();
-    let mut output_image_name = String::new();
     if let Some(name) = names.last() {
         let s: String = name.chars().take(name.len() - 4).collect();
         Some(format!("{:03}", (s.parse::<i32>().unwrap() + 1)))

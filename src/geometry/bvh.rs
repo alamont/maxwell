@@ -104,4 +104,7 @@ impl Geometry for BVHNode {
     fn aabb(&self) -> AABB {
         self.bbox
     }
+    fn is_inside(&self, point: Vec3) -> bool {
+        self.bbox.is_inside(point)
+    }
 }
