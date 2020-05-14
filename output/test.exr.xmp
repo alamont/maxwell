@@ -12,7 +12,7 @@
    darktable:xmp_version="3"
    darktable:raw_params="0"
    darktable:auto_presets_applied="1"
-   darktable:history_end="16"
+   darktable:history_end="18"
    darktable:iop_order_version="5">
    <darktable:masks_history>
     <rdf:Seq/>
@@ -190,6 +190,28 @@
       darktable:enabled="1"
       darktable:modversion="5"
       darktable:params="000000004c7a9abc78e91e4000004842000080c0"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:iop_order="21.0000000000000"
+      darktable:blendop_version="9"
+      darktable:blendop_params="gz11eJxjYGBgkGAAgRNODGiAEV0AJ2iwh+CRyscOAAdeGQQ="/>
+     <rdf:li
+      darktable:num="16"
+      darktable:operation="colorin"
+      darktable:enabled="1"
+      darktable:modversion="6"
+      darktable:params="gz48eJxjZRgFowABRAbaAaNgwAEAQMgAGg=="
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:iop_order="28.0000000000000"
+      darktable:blendop_version="9"
+      darktable:blendop_params="gz11eJxjYGBgkGAAgRNODGiAEV0AJ2iwh+CRyscOAAdeGQQ="/>
+     <rdf:li
+      darktable:num="17"
+      darktable:operation="exposure"
+      darktable:enabled="1"
+      darktable:modversion="5"
+      darktable:params="000000004c7a9abc4a0cb2bf00004842000080c0"
       darktable:multi_name=""
       darktable:multi_priority="0"
       darktable:iop_order="21.0000000000000"

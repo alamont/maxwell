@@ -53,12 +53,12 @@ impl Pdf<f32> for Pdf1D {
             Err(i) => i
         };
         let indexf_normed = (index as f32 + (rnd_num - self.cum_pdf[index])) / self.cum_pdf.len() as f32;
-        let wavelength = (self.x.end - self.x.start) * indexf_normed + self.x.start;
+        let wavelength = (self.range.end - self.range.start) * indexf_normed + self.range.start;
         wavelength
     }
 
     fn value(&self, wavelength: f32) -> f32 {
-        let mut indexf = (wavelength - self.x.start) / ((self.x.end - self.x.start) / self.pdf.len() as f32);
+        let mut indexf = (wavelength - self.range.start) / ((self.range.end - self.range.start) / self.pdf.len() as f32);
         if indexf < 0.0 {
             indexf = 0.0;
         }
@@ -106,8 +106,6 @@ impl Pdf<Vec3> for CosinePdf {
 }
 
 pub fn random_cosine_direction() -> Vec3 {
-    let mut rng = thread_rng();
-
     let r1 = random::<f32>();
     let r2 = random::<f32>();
     let z = (1.0 - r2).sqrt();
