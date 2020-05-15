@@ -4,12 +4,16 @@ use crate::geometry::{Geometry, HitRecord, aabb::{AABB}};
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3};
+
+#[derive(Clone)]
 pub enum AARectType {
     XY,
     XZ,
     YZ,
 }
 
+
+#[derive(Clone)]
 pub struct AARect {
     pub xy0: Vec2,
     pub xy1: Vec2,
@@ -54,7 +58,7 @@ impl Geometry for AARect {
             t,
             p,
             normal,
-            material: self.material.box_clone(),
+            material: self.material.clone(),
             uv
         })
     }
@@ -71,7 +75,7 @@ impl Geometry for AARect {
     }
 
     fn pdf(&self, origin: &Vec3, direction: &Vec3) -> f32 {
-        let ray = &Ray::new(*origin, *direction, 0.0, 0.0);
+        let ray = &Ray::new(*origin, *direction, 0.0);
         if let Some(hit) = &self.hit(ray, 0.001, f32::MAX) {
             let area = (self.xy1.x - self.xy0.x) * (self.xy1.y - self.xy0.y);
             let distance_squared = (ray.at(hit.t) - ray.origin).magnitude_squared();

@@ -2,7 +2,7 @@ use std::ops::Range;
 use rand::{Rng, thread_rng, random};
 use std::f32::consts::PI;
 
-use crate::vector::{Vec3, onb_local};
+use crate::vector::{Vec3, onb_local, random_unit_vec};
 use crate::geometry::Geometry;
 pub trait Pdf<T>: Sync + Send {
     fn value(&self, x: T) -> f32 {
@@ -117,6 +117,16 @@ pub fn random_cosine_direction() -> Vec3 {
     Vec3::new(x, y, z)
 }
 
+pub struct UniformPdf { }
+impl Pdf<Vec3> for UniformPdf { 
+    fn value(&self, _direction: Vec3) -> f32 {
+        1.0 / (4.0 * PI)
+    }
+    fn sample(&self) -> Vec3 {
+        random_unit_vec()
+    }
+}
+
 pub struct GeometryPdf<'a> {
     pub origin: Vec3,
     pub geometry: &'a Box<dyn Geometry + 'a>,
@@ -128,6 +138,34 @@ impl<'a> Pdf<Vec3> for GeometryPdf<'a> {
     }
     fn sample(&self) -> Vec3 {
         self.geometry.sample_direction(&self.origin)
+    }
+}
+
+pub struct DirectionalPdf {
+    pub direction: Vec3,
+    pub epsilon: f32
+}
+
+impl DirectionalPdf {
+    pub fn new(direction: Vec3) -> Self {
+        DirectionalPdf {
+            direction,
+            epsilon: 0.001
+        }
+    }
+}
+
+impl Pdf<Vec3> for DirectionalPdf {
+    fn value(&self, direction: Vec3) -> f32 {
+        let cosine_theta = self.direction.dot(&direction);
+        if (1.0 - cosine_theta) <= self.epsilon {
+            1.0
+        } else {
+            0.0
+        }
+    }
+    fn sample(&self) -> Vec3 {
+        self.direction
     }
 }
 

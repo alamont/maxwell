@@ -1,4 +1,4 @@
-use rand::random;
+use rand::{random, Rng, thread_rng};
 use crate::color::{X, Y, Z};
 use crate::pdf::{Pdf1D, Pdf, MixturePdf};
 
@@ -23,6 +23,8 @@ impl WavelengthSampler {
     }
 
     pub fn get_wavelengths(&self) -> (f32, f32) {
+        // let mut rng = thread_rng();
+        // (rng.gen_range(380.0, 780.0), 1.0)
         sample_clamped(&self.pdf, 0.001)
     }
 }

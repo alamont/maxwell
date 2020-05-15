@@ -50,8 +50,8 @@ pub fn write_exr_xyz(tristimulus_buffer: &Vec<Vec3>, width: usize, height: usize
         .unwrap();
 }
 
-pub fn write_png(tristimulus_buffer: &Vec<Vec3>, width: usize, height: usize, output_path: String) {
-    let max_intensity = find_exposure(&tristimulus_buffer);
+pub fn write_png(tristimulus_buffer: &Vec<Vec3>, width: usize, height: usize, exposure_compensation: f32, output_path: String) {
+    let max_intensity = find_exposure(&tristimulus_buffer) * exposure_compensation;
     let ln_4 = 4.0f32.ln();
     let image_vec = tristimulus_buffer
         .iter()

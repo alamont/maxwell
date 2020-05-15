@@ -49,3 +49,11 @@ pub fn clamp(x: f32) -> f32 {
     else if 1.0f32.lt(&x) { 1.0 }
     else { x }
 }
+
+pub fn random_unit_vec() -> Vector3<f32> {
+    let mut rng = thread_rng();
+    let a = rng.gen_range(0.0, 2.0 * PI);
+    let z = rng.gen_range(-1.0, 1.0) as f32;
+    let r = (1.0 - z * z).sqrt();
+    Vector3::new(r * a.cos(), r * a.sin(), z)
+}

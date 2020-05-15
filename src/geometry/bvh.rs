@@ -4,6 +4,7 @@ use crate::vector::Vec3;
 
 const MAX_LEAF: usize = 2;
 
+#[derive(Clone)]
 pub struct BVHNode {
     left: Box<dyn Geometry>,
     right: Box<dyn Geometry>,

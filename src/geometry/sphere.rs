@@ -5,6 +5,7 @@ use crate::material::Material;
 use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3, onb_local, random_to_sphere, clamp};
 
+#[derive(Clone)]
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
@@ -29,7 +30,7 @@ impl Geometry for Sphere {
                     t,
                     p,
                     normal: outward_normal,
-                    material: self.material.box_clone(),
+                    material: self.material.clone(),
                     uv
                 });
             }
@@ -42,7 +43,7 @@ impl Geometry for Sphere {
                     t,
                     p,
                     normal: outward_normal,
-                    material: self.material.box_clone(),
+                    material: self.material.clone(),
                     uv
                 });
             }
@@ -58,7 +59,7 @@ impl Geometry for Sphere {
     }
 
     fn pdf(&self, origin: &Vec3, direction: &Vec3) -> f32 {
-        let ray = Ray::new(*origin, *direction, 0.0, 0.0);
+        let ray = Ray::new(*origin, *direction, 0.0);
         if let Some(hit) = &self.hit(&ray, 0.001, f32::MAX) {
             let cos_theta_max = (1.0 - self.radius * self.radius / (self.center - origin).magnitude_squared()).sqrt();
             // println!("cos_theta_max: {}", cos_theta_max);

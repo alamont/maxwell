@@ -19,24 +19,23 @@ use rayon::prelude::*;
 
 use crate::color::{cie_to_rgb, find_exposure, get_tristimulus};
 use crate::geometry::{bvh::BVHNode, sphere::Sphere, Geometry, HittableList};
-use crate::material::{
-    blackbody::BlackBody, dielectric::Sf10Glass, ggx::GGX, lambertian::Lambertian, ScatterRecord,
-};
+use crate::material::{ScatterRecord};
 use crate::output::{get_next_output_image_name, write_exr_xyz, write_png};
 use crate::pdf::{GeometryPdf, MixturePdf, Pdf};
 use crate::ray::Ray;
 use crate::vector::Vec3;
 
 fn main() {
-    let width = 1000;
+    let width = 500;
     let height = 500;
     let samples = 2000;
+    let exposure_compensation = 1.0;
 
     let mut win = window(width, height);
     let mut win_buffer: Vec<u32>;
     let mut tristimulus_buffer: Vec<Vec3> = vec![Vec3::zeros(); (width * height) as usize];
 
-    let (world, attractors, camera) = scenes::spheres_7::scene(width, height);
+    let (world, attractors, camera) = scenes::lights::scene(width, height);
 
     for n in 0..samples {
         tristimulus_buffer = (0..height)
@@ -47,9 +46,9 @@ fn main() {
                         let u = (x as f32 + random::<f32>()) / width as f32;
                         let v = (height as f32 - (y as f32 + random::<f32>())) / height as f32;
 
-                        let ray = camera.get_ray_tri(u, v);
+                        let (ray, ray_pdf) = camera.get_ray_tri(u, v);
                         let tristimulus_value =
-                            ray_tristimulus(&ray, &world, &attractors, 50) / ray.pdf;
+                            ray_tristimulus(&ray, &world, &attractors, 50) / ray_pdf;
 
                         let offset = (y * width + x) as usize;
 
@@ -64,7 +63,7 @@ fn main() {
             .collect::<Vec<Vec3>>();
 
         println!("Samples per pixel: {}", n);
-        let max_intensity = find_exposure(&tristimulus_buffer);
+        let max_intensity = find_exposure(&tristimulus_buffer) * exposure_compensation;
         let ln_4 = 4.0f32.ln();
 
         win_buffer = tristimulus_buffer
@@ -113,6 +112,7 @@ fn main() {
         &tristimulus_buffer,
         width,
         height,
+        exposure_compensation,
         format!("output/png/{}.png", image_name_base),
     );
 }
@@ -141,7 +141,6 @@ fn ray_tristimulus<'a>(
                         origin: hit_rec.p,
                         direction: mixture_pdf.sample(),
                         wavelength: ray.wavelength,
-                        pdf: ray.pdf,
                     };
                     let pdf_val = mixture_pdf.value(scattered_ray.direction);
                     if pdf_val == 0.0 {

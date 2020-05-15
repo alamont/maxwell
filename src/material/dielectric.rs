@@ -41,7 +41,7 @@ impl Material for Sf10Glass {
 
         let scattered = if etai_over_etat * sin_theta > 1.0 {
             let reflected = reflect(&unit_direction, &normal);
-            Ray::new(hit.p, reflected, ray.wavelength, ray.pdf)
+            Ray::new(hit.p, reflected, ray.wavelength)
         } else {
             let reflect_prob = schlick(cos_theta, etai_over_etat);
             let refracted_or_reflected = if random::<f32>() < reflect_prob  {
@@ -49,15 +49,12 @@ impl Material for Sf10Glass {
             } else {
                 refract(&unit_direction, &normal, etai_over_etat)
             };
-            Ray::new(hit.p, refracted_or_reflected, ray.wavelength, ray.pdf)
+            Ray::new(hit.p, refracted_or_reflected, ray.wavelength)
         };
 
         Some(ScatterRecord::Specular {
             attenuation: 1.0,
             ray: scattered
         })
-    }
-    fn box_clone(&self) -> Box<dyn Material> {
-        Box::new((*self).clone())
     }
 }

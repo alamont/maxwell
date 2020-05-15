@@ -3,6 +3,10 @@ pub mod bvh;
 pub mod aabb;
 pub mod aarect;
 pub mod aabox;
+pub mod transform;
+pub mod volume;
+
+use dyn_clone::DynClone;
 
 use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3};
@@ -10,7 +14,7 @@ use crate::material::Material;
 use crate::geometry::aabb::{AABB, surrounding_box};
 use crate::pdf::{Pdf, MixturePdf, GeometryPdf};
 
-pub trait Geometry: Sync + Send{
+pub trait Geometry: Sync + Send + DynClone{
     fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord>;
     fn aabb(&self) -> AABB;
     fn pdf(&self, _origin: &Vec3, _direction: &Vec3) -> f32 {
@@ -23,6 +27,7 @@ pub trait Geometry: Sync + Send{
         false
     }
 }
+dyn_clone::clone_trait_object!(Geometry);
 
 pub struct HitRecord {
     pub t: f32,
@@ -32,7 +37,7 @@ pub struct HitRecord {
     pub uv: Vec2
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct HittableList {
     pub objects: Vec<Box<dyn Geometry>>,
 }
@@ -83,6 +88,7 @@ impl Geometry for HittableList {
     }
 }
 
+#[derive(Clone)]
 pub struct FlipNormals {
     pub object: Box<dyn Geometry>
 }

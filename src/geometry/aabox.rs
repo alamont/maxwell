@@ -8,6 +8,7 @@ use crate::geometry::{
 use crate::material::{Material, EmptyMaterial};
 use crate::ray::Ray;
 use crate::vector::{Vec2, Vec3};
+#[derive(Clone)]
 pub struct AABox {
     pub box_min: Vec3,
     pub box_max: Vec3,
@@ -26,12 +27,14 @@ impl AABox {
 
         let mut sides = HittableList::default();
 
+        let empty_material = Box::new(EmptyMaterial {});
+
         sides.push(
             AARect {
                 xy0: p.xy() - half_scale.xy(),
                 xy1: p.xy() + half_scale.xy(),
                 k: p.z + half_scale.z,
-                material: EmptyMaterial{}.box_clone(),
+                material: empty_material.clone(),
                 rect_type: XY,
             }
             .boxed(),
@@ -42,7 +45,7 @@ impl AABox {
                     xy0: p.xy() - half_scale.xy(),
                     xy1: p.xy() + half_scale.xy(),
                     k: p.z - half_scale.z,
-                    material: EmptyMaterial{}.box_clone(),
+                    material: empty_material.clone(),
                     rect_type: XY,
                 }
                 .boxed(),
@@ -54,7 +57,7 @@ impl AABox {
                 xy0: p.xz() - half_scale.xz(),
                 xy1: p.xz() + half_scale.xz(),
                 k: p.y + half_scale.y,
-                material: EmptyMaterial{}.box_clone(),
+                material: empty_material.clone(),
                 rect_type: XZ,
             }
             .boxed(),
@@ -65,7 +68,7 @@ impl AABox {
                     xy0: p.xz() - half_scale.xz(),
                     xy1: p.xz() + half_scale.xz(),
                     k: p.y - half_scale.y,
-                    material: EmptyMaterial{}.box_clone(),
+                    material: empty_material.clone(),
                     rect_type: XZ,
                 }
                 .boxed(),
@@ -77,7 +80,7 @@ impl AABox {
                 xy0: p.yz() - half_scale.yz(),
                 xy1: p.yz() + half_scale.yz(),
                 k: p.x + half_scale.x,
-                material: EmptyMaterial{}.box_clone(),
+                material: empty_material.clone(),
                 rect_type: YZ,
             }
             .boxed(),
@@ -88,7 +91,7 @@ impl AABox {
                     xy0: p.yz() - half_scale.yz(),
                     xy1: p.yz() + half_scale.yz(),
                     k: p.x - half_scale.x,
-                    material: EmptyMaterial{}.box_clone(),
+                    material: empty_material.clone(),
                     rect_type: YZ,
                 }
                 .boxed(),
@@ -108,7 +111,7 @@ impl AABox {
 impl Geometry for AABox {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         if let Some(mut hit) = self.sides.hit(ray, t_min, t_max) {
-            hit.material = self.material.box_clone();
+            hit.material = self.material.clone();
             Some(hit)
         } else {
             None
